@@ -1,0 +1,150 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { motion } from "framer-motion";
+
+function StudentDashboard() {
+  const [courses, setCourses] = useState([]);
+  const [myCourses, setMyCourses] = useState([]);
+  const [search, setSearch] = useState("");
+
+  const token = localStorage.getItem("token");
+
+  /* ================= FETCH ALL COURSES ================= */
+  const fetchCourses = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/courses");
+      setCourses(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  /* ================= FETCH MY COURSES ================= */
+  const fetchMyCourses = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/my-courses", {
+        headers: { Authorization: token },
+      });
+      setMyCourses(res.data);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCourses();
+    fetchMyCourses();
+  }, []);
+
+  /* ================= ENROLL COURSE ================= */
+  const enrollCourse = async (id) => {
+    try {
+      await axios.post(
+        `http://localhost:5000/enroll/${id}`,
+        {},
+        { headers: { Authorization: token } }
+      );
+
+      alert("Enrolled successfully 🎉");
+      fetchMyCourses();
+    } catch {
+      alert("Already enrolled or error ❌");
+    }
+  };
+
+  /* ================= SEARCH FILTER ================= */
+  const filteredCourses = courses.filter((c) =>
+    c.title.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div style={{ padding: "30px", maxWidth: "1000px", margin: "auto" }}>
+      {/* TITLE */}
+      <motion.h2
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        🎓 Student Dashboard
+      </motion.h2>
+
+      {/* SEARCH */}
+      <input
+        placeholder="🔍 Search courses..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "10px",
+          margin: "20px 0",
+          borderRadius: "8px",
+          border: "1px solid #ccc",
+        }}
+      />
+
+      {/* ALL COURSES */}
+      <h3>📚 Available Courses</h3>
+
+      {filteredCourses.length === 0 ? (
+        <p>No courses found</p>
+      ) : (
+        filteredCourses.map((c) => (
+          <motion.div
+            key={c._id}
+            whileHover={{ scale: 1.02 }}
+            style={{
+              border: "1px solid #ddd",
+              padding: "15px",
+              borderRadius: "10px",
+              marginBottom: "15px",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+            }}
+          >
+            <h4>{c.title}</h4>
+            <p>{c.description}</p>
+            <p>
+              👨‍🏫 {c.instructor} | 💰 ₹{c.price}
+            </p>
+
+            <button
+              onClick={() => enrollCourse(c._id)}
+              style={{
+                padding: "8px 15px",
+                borderRadius: "6px",
+                border: "none",
+                background: "#4CAF50",
+                color: "white",
+                cursor: "pointer",
+              }}
+            >
+              Enroll
+            </button>
+          </motion.div>
+        ))
+      )}
+
+      {/* MY COURSES */}
+      <h3 style={{ marginTop: "40px" }}>✅ My Courses</h3>
+
+      {myCourses.length === 0 ? (
+        <p>You have not enrolled in any course</p>
+      ) : (
+        myCourses.map((c) => (
+          <div
+            key={c._id}
+            style={{
+              border: "1px solid #eee",
+              padding: "12px",
+              borderRadius: "8px",
+              marginBottom: "10px",
+              background: "#fafafa",
+            }}
+          >
+            <b>{c.title}</b> – {c.instructor}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+export default StudentDashboard;
